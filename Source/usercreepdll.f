@@ -18,7 +18,10 @@ c        dwc/dt := C * (seqv/(1-wc) ^ m
 c *** Primary Fatigue damage function (Y Duyi, W  Zhenlim. IJFatigue 23/2001)
 c        wf =-Df/LN(Nf)*LN(1-N/Nf)
 c *** Summary damage
-c
+c     If you using this code for research or industrial purposes please cite https://doi.org/10.3221/IGF-ESIS.52.23:
+c     [A.V. Tumanov et al. Crack tip fields and fracture resistance parameters based on strain gradient plasticity. 
+c           Frattura ed Integrità Strutturale, 52 (2020) 300-310; DOI: 10.3221/IGF-ESIS.52.23.]
+c     
 c*************************************************************************
 c Copyright ANSYS.  All Rights Reserved.
 c
