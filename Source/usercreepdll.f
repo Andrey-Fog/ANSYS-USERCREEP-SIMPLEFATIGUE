@@ -8,21 +8,16 @@
 !DEC$ ATTRIBUTES DLLEXPORT, ALIAS:"USERCREEP"::usercreep        
 c*************************************************************************
 c     *** primary function ***
-c           Define creep laws when creep table options are
+c           Define creep law when creep table options are
 c           TB,CREEP with TBOPT=100.
-c           Demonstrate how to implement usercreep subroutine 
 c
-c            Creep equation is 
-c               dotcreq := k0 * seqv ^ n * creqv ^ m * exp (-b/T)
-c
-c               seqv  is equivalent effective stress (Von-Mises stress)
-c               creqv is equivalent effective creep strain
-c               T     is the temperature
-c               k0, m, n, b are materials constants,
-c
-c           This model corresponds to  primary creep function  TBOPT = 1
-c
-c                                                          gal 10.01.1998
+c *** Primary creep function 
+c        de/dt := B * (seqv/(1-w) ^ n
+c *** Primary creep damage function       
+c        dwc/dt := C * (seqv/(1-wc) ^ m  
+c *** Primary Fatigue damage function (Y Duyi, W  Zhenlim. IJFatigue 23/2001)
+c        wf =-Df/LN(Nf)*LN(1-N/Nf)
+c *** Summary damage
 c
 c*************************************************************************
 c Copyright ANSYS.  All Rights Reserved.
@@ -82,7 +77,7 @@ c                                                    strain to creep strain
 c
 c     local variables
 c     ===============
-c      c1,c2,c3,c4 (dp, sc, l)            temporary variables as creep constants 
+c      c1,c2,c3... (dp, sc, l)            temporary variables as creep constants 
 c      con1        (dp ,sc, l)            temporary variable
 c      t           (dp ,sc, l)            temporary variable
 c
@@ -118,59 +113,57 @@ c *** skip when stress and creep strain are all zero
       if (seqv.LE.ZERO.AND.creqv.LE.ZERO) GO TO 990
 c *** add temperature off set
       t       = temp + toffst
-c *** Primary creep function 
-c        de/dt := B * (seqv/(1-w) ^ n
-c *** Primary creep damage function       
-c        dwc/dt := C * (seqv/(1-wc) ^ m  
-c *** Primary Fatigue damage function (Y Duyi, W  Zhenlim. IJFatigue 23/2001)
-c        wf =-Df/LN(Nf)*LN(1-N/Nf)
-c *** Summary damage
-c        w = wc / (1-wf) + wf / (1-wc)
-c     —читываем свойства материала      
+c *** Read material properties
+c     Norton law constants
       B       = prop(1) 
       n       = prop(2)
+c     Rabotnov damage law constants
       C       = prop(3)
       m       = prop(4)
+c     Young modulus
       E       = prop(5)
+c     Fracture tougthness
       K1c     = prop(6)
+c     Hold time for trapeziedal type cycle in seconds
       Cyctime = prop(7)
+c     True ultimate stress
       Sk      = Prop(8)
+c     exponent for the linear part of s-n curve 
       bf      = Prop(9)
+c     flag default is zero
+c           if trig=1 fatigue damage is disabled
+c           if trig=2 creep damage is disabled
       trig    = Prop(10)
-c вводим ее дл€ тестовой отладки
-c      trig    = 1
+c 
       w0      = zero
       w0f     = zero
       wf      = zero
       w0cr    = zero
       wcr     = zero
       w       = zero
-c *** берем значение функций с предыдущей итерации
+c *** read initial damage
          w0 = Ustatev(1)
            w0f = Ustatev(2)
             w0cr = Ustatev(3)
 c ***************************      
 c ***********Fatigue*********
 c ***************************
-c  в основу положена модель предолженна€ в статье
+c     Fatigue damage law is based on
 c     Dattoma V, Giancane S, Nobile R, et al. (2006) 
-c     Ftg life predict. under variable loading based on a new non-linear continuum dmg. mech. model. 
-c            International Journal of Fatigue 28: 89Ц95.
+c           Ftg life predict. under variable loading based on a new non-linear continuum dmg. mech. model. 
+c                 International Journal of Fatigue 28: 89пњљ95.
       Nf =(seqv/Sk)**(1/bf)
       DNf= 1-(seqv*seqv)/(2*E*K1c)
-c         «десь будет мутна€ процедура согласовани€ текущей поврежденности
-c     с тем, которую мы бы получили в результате одноосных испытаний
-c     ѕо текущему значению поврежденности определ€ем, какой был бы цикл 
-c     при одноосных испытани€х. Ќа основании этого определ€ем скорость 
-c     накоплени€ повреждений.
-c     » так сначала определ€ем цикл. ќн не соотноситс€ с реальным циклом
+c     
+c     For initial damage and eqv stresses we can ontain reference cycle and calculate current damage growth rate
+c     Reference cycle is (it's not correspond with real)
       con1=-w0*LOG(Nf)/DNf
       Nut=Nf*(1-EXP(con1))
-c     определ€ем скорость накоплени€ повреждений на данном цикле
+c     damage growth rate
       dwfdN = DNf/((Nf-Nut)*LOG(Nf))
-c     определ€ем количество циклов за приращение времени   
+c     number of cycles in dtime   
       Ndt=dtime*3600/Cyctime
-c     параметр поврежденности в конце итерации
+c     Damage value at the end of iteration
       wf = -DNf/LOG(Nf)*LOG(1-(Nut + Ndt)/Nf)
       dwf=wf-w0
       IF(trig.eq.1) dwf=0
@@ -179,10 +172,9 @@ c ***************************
 c ***********CREEP***********
 c ***************************
         
-c *** константа интегрировани€ дл€ полузчести
-c      con1    = -1/(m+1)     
+c *** Constant of integration     
       con1 = - (1- w0)**(m+1)/(m+1)-C*seqv**m*(time-dtime)
-c *** прогнозируем значение функции повреждений в конце итерации  
+c *** Damage value at the end of time increment
       tmp1=-(m+1)*(C*seqv**m*(time)+con1)
       IF(tmp1.le.0) THEN 
       wcr = 0
@@ -196,16 +188,12 @@ c *** прогнозируем значение функции повреждений в конце итерации
 c ***************************      
 c ********Interaction********
 c *************************** 
-      
+c     Summary damage for creep-fatigue interaction law      
       dw=dwcr/(1-dwf)+dwf/(1-dwcr)
       w=w0+dw
 c *** calculate incremental creep strain      
       IF(creqv .le. TINY) creqv = sqrt(TINY)
       delcr   = ZERO
-      
-      
-      
-      
       IF(B.gt.ZERO) delcr   = B*((Seqv/(1-w))**n)*dtime
 
 c *** derivitive of incremental creep strain to effective stress
@@ -217,7 +205,7 @@ c *** derivitive of incremental creep strain to effective stress
 
 c *** derivitive of incremental creep strain to effective creep strain
       dcrda(2)= 0
-c *** write the effective creep strain to last state variable for verification
+c *** write the obtained damage values in state variable array
       if (nstatv .gt. 0) then
          Ustatev(1) = w
          Ustatev(2) = Ustatev(2) + dwf
