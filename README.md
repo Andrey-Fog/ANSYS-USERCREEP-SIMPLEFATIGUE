@@ -6,8 +6,7 @@ Simple creep-fatigue interaction law realized via ANSYS usercreep subroutine
  In source files you can find a APDL script example for 2D plate with hole. After compiling and attaching present dynamic link library as ANSYS user creep law copy and run [this file](https://github.com/Andrey-Fog/ANSYS-USERCREEP-SIMPLE_FATIGUE/blob/main/ANSCMD.txt) from ANSYS Mechanical command line.  
 
 If you using this code for research or industrial purposes please cite:
-[A.V. Tumanov et al. Crack tip fields and fracture resistance parameters based on strain gradient plasticity. Frattura ed Integrità Strutturale, 52 (2020) 300-310; 
- DOI: 10.3221/IGF-ESIS.52.23.](https://doi.org/10.3221/IGF-ESIS.52.23)  
+[A.V. Tumanov et al. Crack growth rate prediction based on damage accumulation functions for creep-fatigue interaction](https://doi.org/10.3221/IGF-ESIS.52.23)  
 
 Also you can find a [Visual abstract](https://www.youtube.com/watch?v=sueQTVURYUc) for reference paper.
 
