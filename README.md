@@ -169,4 +169,4 @@ For debug this library tune your compilator and linker according following table
 |Generate debug info: |	 - |		    Yes (/DEBUG)  |
 
 *** - your version of ANSYS.  
-All other settings by default. Its allows me connect to ANSYS for debugging.
+All other settings by default. Its allows me connect to ANSYS.EXE process for debugging.
